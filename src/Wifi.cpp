@@ -34,7 +34,7 @@ DISCLAIMER:
 
 /* Local Application headers */
 #include "APP_common.h"       
-#include "../../Python/LR_HMI_V2/common.h"    // Shared with Python client application
+#include "../../HMI/common.h"    // Shared with Python client application
 
 #define NB_TRY_ROUTER 5       // Retry to connect the router
 #define DELAY_ROUTER  1000    // RETRY DELAY ROUTER CONNECTION

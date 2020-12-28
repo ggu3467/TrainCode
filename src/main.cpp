@@ -18,7 +18,7 @@ DISCLAIMER:
 
 /* Local Application headers */
 #include "APP_common.h"   
-#include "../../Python/LR_HMI_V2/common.h"  // Shared with Python client application
+#include "../../HMI/common.h"  // Shared with Python client application
 
 // Local service function
 void printDec(byte *, byte);
