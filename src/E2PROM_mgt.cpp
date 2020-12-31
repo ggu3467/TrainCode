@@ -12,7 +12,7 @@ DISCLAIMER:
 
 /* ESP32 headers */
 #include <SPI.h>
-#include <ESP8266WiFi.h>
+#include <wifi.h>
 #include <EEPROM.h>
 
 /* Local Application headers */
