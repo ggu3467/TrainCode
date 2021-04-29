@@ -17,14 +17,16 @@ DISCLAIMER:
 #include <Servo.h>
 
 /* Local Application headers */
-#include "APP_common.h"   
+#include "APP_common.h"
 #include "../../HMI/common.h"  // Shared with Python client application
+
+IPAddress LocalIp(192,168,1,12);  // A changer pour chaque module....
 
 // Local service function
 void printDec(byte *, byte);
 
 const int   TIMER_INIT      = 375;
-const int   PWM_PIN         = 4;    // D2 Power With Modulation PIN 
+const int   PWM_PIN         = 4;    // D2 Power With Modulation PIN
 const int   SERVO1_PIN      = 13;   // D7 Use to control servo 1
 const int   SERVO2_PIN      = 16;   // D0 Use to control servo 2
 const int   SERVO3_PIN      = 20;   // D1 Use to control servo 3
@@ -127,8 +129,8 @@ void ICACHE_RAM_ATTR onTimerISR(){
 
 // We are looking for a interrupt every
 void SetTimerMotorCtrl() {
-  Serial.println("SetTimer: IN");
-  
+  Serial.println("SetTimer: xx IN");
+
   timer1_isr_init();
   timer1_attachInterrupt(onTimerISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
@@ -138,9 +140,9 @@ void SetTimerMotorCtrl() {
 }
 
 
-void ServoControlSetup(void) {  
-    servo1.attach(SERVO1_PIN); 
-    servo2.attach(SERVO2_PIN); 
+void ServoControlSetup(void) {
+    servo1.attach(SERVO1_PIN);
+    servo2.attach(SERVO2_PIN);
     servo3.attach(SERVO3_PIN);
 }
 /*
@@ -148,7 +150,128 @@ void ServoControlSetup(void) {
   General setup() procedure for SerialPort, PinMode, Timer, BlueTooth, and E2PROM
 
 */
+/* Local Application headers */
+#include "APP_common.h"
+#include "../../HMI/common.h"    // Shared with Python client application
 
+#define NB_TRY_ROUTER 5       // Retry to connect the router
+#define DELAY_ROUTER  1000    // RETRY DELAY ROUTER CONNECTION
+
+const char* ssid1             = "LouisRoussy";    // SSID for train Application
+const char* password1         = "monastier";      // Password for train Application
+
+WiFiClient  Client2;          // ESP32 WifiClient object
+
+char        E2P_ssid[MAX_SIZE_SSID];
+char        E2P_pwd[MAX_SIZE_PWD];
+char        E2P_IpAdr[MAX_SIZE_IP_ADR];
+
+
+// ############################################################################
+// LOCAL FUNCTION:  Connection to the host (after connection to Wifi NetWork)
+//    - none
+//    -
+// ###########################################################################
+void Wifi_UDP(){
+
+ Serial.println("Wifi UDP setup");
+
+
+} // Wifi_UDP
+
+// ############################################################################
+// PUBLIC FUNCTION:  Acknowledge received data
+//    - const char *string: description string
+//    - int value: value of the data
+// ###########################################################################
+void WifiPrint(const char *string, int value) {
+char buf[ACK_MSG_LENGTH+1];   // +1, for null terminination
+
+  memset(buf,'-',ACK_MSG_LENGTH);
+  sprintf(buf, "%s: %u", string, value);
+  Client2.write(buf,ACK_MSG_LENGTH);
+}
+
+// ############################################################################
+// PUBLIC FUNCTION:  Send data to the host
+//    - none
+//    -
+// ###########################################################################
+void WifiSendMsgToHost(char *buf){
+//int len;
+  WifiPrint((const char *)buf, 0);
+// Serial.print("Sending data to host");
+// len = Client2.write(buf,MSG_LENGTH);
+}
+
+// ############################################################################
+// PUBLIC FUNCTION:  Receive data from thee host
+//    - none
+//    -
+// ###########################################################################
+
+int WifiRead(char *buff) {
+int len=0;
+  while (Client2.available()>0) {
+    len=Client2.read((uint8_t *)buff,ORDER_SIZE);
+// debug traces, "printl" will affect performances (locking calls ?)
+//    Serial.println("RCV");
+//    Serial.print((char *)buff);
+//    Serial.print(len);
+  }
+  return len;
+}
+
+// ############################################################################
+// LOCAL FUNCTION:  Connection to Wifi NetWork
+//    - nbTry: number of retries
+//    - delay: delay between between try
+// ###########################################################################
+
+int WifiConnection(int nbTry, int delayTry) {
+  int i;
+  int connected=0;
+
+  for (i=0;i<nbTry;i++){
+      connected = WiFi.status();
+      if (connected == WL_CONNECTED) {
+         Serial.println("CONNECTED TO WIFI");
+         break;
+      }
+      delay(delayTry);
+    }
+  return connected;
+}
+
+// ############################################################################
+// PUBLIC FUNCTION:  Connection to the Wifi NetWork and to the host
+//    - 1: connect to the router with X retries
+//    - 2: once connected to the router, connect to the host
+// ###########################################################################
+int WiFiSetup(IPAddress _myIP) {
+IPAddress myIP  = _myIP;
+IPAddress Gateway(192, 168, 1, 1);
+IPAddress SubNet(255, 255, 0, 01);
+
+int       myPort;
+
+  Serial.println("DATA from E2PROM: ");
+  Serial.print  ("ssid:");
+  Serial.println(E2P_ssid);
+  Serial.print  ("PWD :");
+  Serial.println(E2P_pwd);
+
+  WiFi.config(myIP,Gateway,SubNet);
+  WiFi.begin(E2P_ssid, E2P_pwd);
+
+  if (WifiConnection(NB_TRY_ROUTER, DELAY_ROUTER)==WL_CONNECTED) {
+    Serial.print("E2PROM: WIFI IP address: ");
+    myPort = PORT_BASE + 12;
+    Serial.print("PORT: ");
+    Serial.println(myPort);
+  }
+  return 1;
+}
 
 void setup() {
 int pinMode1,pinMode2;            // Read pin used to select application
@@ -191,7 +314,6 @@ int pinMode1,pinMode2;            // Read pin used to select application
     /* code */
     }
 
-    WiFi.begin("LouisRoussy","Monastier");
 
     pinMode(LIVE_LED,OUTPUT);     // Set-up PIN for LED
     pinMode(PWM_PIN, OUTPUT);     // Set-up PIN for PowerControl
@@ -204,15 +326,17 @@ int pinMode1,pinMode2;            // Read pin used to select application
         EEPROM_write_value(E2P_ADR_DutCycle,MIN_DUTY_CYCLE);
         startDutyCycle=MIN_DUTY_CYCLE;
     }
-    
+
     if (ApplicationMode==APP_MOTOR_CTRL) {
         SetTimerMotorCtrl();                   // Set-up used for power control (PWM)
     }
     if (ApplicationMode==APP_SERVO_CTRL){
        ServoControlSetup();
     }
-    localUdpPort = WiFiSetup();                  // Wifi initialisation */
-    Serial.print("Port:");
+    localUdpPort = WiFiSetup(LocalIp);                  // Wifi initialisation */
+
+
+    Serial.print("Port Wifi:");
     Serial.println(localUdpPort);
       //This initializes udp and transfer buffer
 }
@@ -220,7 +344,7 @@ int pinMode1,pinMode2;            // Read pin used to select application
 void ServoSendAngle(IPAddress destIP, int numServo, int angle ) {
 
     UdpPrint2Value(destIP, " NumServo:", numServo, " angle:",angle);
-    
+
     switch (numServo) {
         case 1: servo1.write(angle);
                 break;
@@ -228,7 +352,7 @@ void ServoSendAngle(IPAddress destIP, int numServo, int angle ) {
                 break;
         case 3 :servo3.write(angle);
                 break;
-    }                   
+    }
 }
 /*
 
@@ -251,7 +375,7 @@ int   angle;     // Rotation angle
   result = Udp.begin(localUdpPort);
   Serial.print("Port:");
   Serial.println(localUdpPort);
-  
+
   Serial.print("UdpBegin");
   Serial.println(result);
   // sanity check..
@@ -268,7 +392,7 @@ int   angle;     // Rotation angle
     MsgLength = Udp.read(Msg,MaxLength);
 
     if ( MsgLength > 0){
-        int UsableScale; 
+        int UsableScale;
         int PowerOrder;          // For power/speed setting
 
         AckIP = Udp.remoteIP();  // In order to send ACK msg to the sender
@@ -281,7 +405,7 @@ int   angle;     // Rotation angle
 
             switch (MsgCode) {
                 case 0: break;
-                case PW_CHANGE: 
+                case PW_CHANGE:
                         Serial.print(" Power:"); //
                         PowerOrder = (int)Msg[1];
                         printDec((byte *)&Msg[1],1);
@@ -294,7 +418,7 @@ int   angle;     // Rotation angle
                         Serial.println(dutyCycle);
                         UdpPrintValue(AckIP," PWMxx:",dutyCycle);
                         break;
-                case LIGHT_ORDER: 
+                case LIGHT_ORDER:
                         Serial.println(" TODO LIGHT ORDER");
                         UdpPrint(AckIP,AckMsgMotor2);
                         break;
@@ -302,7 +426,7 @@ int   angle;     // Rotation angle
                         dutyCycle=0;
                         UdpPrint(AckIP,AckMsgMotor3);
                         break;
-                case FWD_ORDER: 
+                case FWD_ORDER:
                         Serial.println(" Forward");
                         UdpPrint(AckIP,AckMsgMotor4);
                         break;
@@ -320,31 +444,31 @@ int   angle;     // Rotation angle
         if (MsgCode>=MSG_SERVO_BASE) {
             switch (MsgCode) {
                 case 0x80: break;
-                case FORK_RIGHT: 
+                case FORK_RIGHT:
                           numServo = Msg[1];
                           angle    = Msg[2];
                           ServoSendAngle(AckIP, numServo, angle);
                           break;
-                case FORK_LEFT: 
+                case FORK_LEFT:
                           numServo = Msg[1];
                           angle    = Msg[2];
                           ServoSendAngle(AckIP, numServo, angle);
                           break;
 
-                case FORK_MIDDLE: 
+                case FORK_MIDDLE:
                           numServo = Msg[1];
                           angle    = Msg[2];
                           ServoSendAngle(AckIP, numServo,angle);
 //                          UdpPrint(AckIP,AckMsgForkMiddle);
                           break;
 
-                case FORK_SET_POS: 
+                case FORK_SET_POS:
                           numServo = Msg[1];
                           angle    = Msg[2];
                           ServoSendAngle(AckIP, numServo,angle);
                           break;
             }
-        } // if (MsgCode>=MSG_SERVO_BASE) 
+        } // if (MsgCode>=MSG_SERVO_BASE)
       } // if MsgLength>0)
       EEPROM_write_value(E2P_ADR_DutCycle,dutyCycle);
     } // while (1)
@@ -369,4 +493,3 @@ void printDec(byte *buffer, byte bufferSize) {
     Serial.print(buffer[i], DEC);
   }
 }
-

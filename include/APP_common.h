@@ -1,3 +1,4 @@
+
 /*
 COMMON DATA between the modules
 
@@ -46,7 +47,7 @@ void E2PROM_test();
 
 // From Wifi.cpp
 #define PORT_BASE (43150)
-int  WiFiSetup(void);
+int  WiFiSetup(IPAddress);
 int  WifiRead(char *);
 void WifiPrint(const char *, int);
 void WifiSendMsgToHost(char *);

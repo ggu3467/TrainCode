@@ -12,7 +12,7 @@ DISCLAIMER:
 
 /* ESP32 headers */
 #include <SPI.h>
-#include <wifi.h>
+#include <ESP8266WiFi.h>
 #include <EEPROM.h>
 
 /* Local Application headers */
@@ -23,6 +23,7 @@ DISCLAIMER:
 
 extern const char*  ssid1;
 extern const char*  password1;
+extern const char*  ip;
 extern       int    startDutyCycle;
 
 void E2PROM_reinitialise () {
@@ -33,32 +34,35 @@ int   strLength=0;
     EEPROM.put(E2P_ADR_TAG2,TAG2);
 
     strLength = EEPROM_WRITE_STR(E2P_ADR_SSID, MAX_SIZE_SSID, ssid1);
-    Serial.print("E2PROM_test: Lenght of SSID:");
+    Serial.print("### E2PROM_test: Lenght of SSID:");
     Serial.println(strLength);
 
     strLength = EEPROM_WRITE_STR(E2P_ADR_PWD, MAX_SIZE_PWD, password1);
-    Serial.print("E2PROM_test: Lenght of PWD:");
+    Serial.print("### E2PROM_test: Lenght of PWD:");
     Serial.println(strLength);
+
+//    strLength = EEPROM_WRITE_STR(E2P_ADR_IP_ADR, MAX_SIZE_IP_ADR, ip);
+//   Serial.print("### E2PROM_test: Lenght of PWD:");
+//    Serial.println(strLength);
 
     EEPROM.put(E2P_ADR_DutCycle,MIN_DUTY_CYCLE);
 
     EEPROM.commit();
-    delay(500);
+//  delay(5000);
 
     EEPROM_READ_STR(E2P_ADR_SSID, MAX_SIZE_SSID, buf);
-    Serial.print("E2PROM_test: SSID:   ");
+    Serial.print("read E2PROM_test: SSID:   ");
     Serial.println(buf);
 
     EEPROM_READ_STR(E2P_ADR_PWD, MAX_SIZE_PWD, buf);
-    Serial.print("E2PROM_test: PWD:   ");
+    Serial.print("read E2PROM_test: PWD:   ");
     Serial.println(buf);
 
     EEPROM_READ_STR(E2P_ADR_IP_ADR, MAX_SIZE_IP_ADR, buf);
-    Serial.print("E2PROM_test: IPADR: ");
+    Serial.print("read E2PROM_test: IPADR: ");
     Serial.println(buf);
 }
 /* ==================== TEST CODE */
-
 
 bool EEPROM_init_value( void ){
 int tag1,tag2;
@@ -66,7 +70,7 @@ char ssid[MAX_SIZE_SSID];
 char pwd[MAX_SIZE_PWD];
 char ip_adr[MAX_SIZE_IP_ADR];
 
-//  EEPROM.begin(1024);  // ==> done in the main setup.
+  Serial.println("EEPROM_init_value ==>" );
   EEPROM.get(E2P_ADR_TAG1,tag1);
   Serial.println(tag1);
   EEPROM.get(E2P_ADR_TAG2,tag2);
@@ -77,6 +81,7 @@ char ip_adr[MAX_SIZE_IP_ADR];
   Serial.println(pwd);
   EEPROM.get(E2P_ADR_IP_ADR, ip_adr);
   Serial.println(ip_adr);
+  Serial.println("<== EEPROM_init_value " );
 
   if (  (tag1==TAG1) &&
         (tag2==TAG2) &&
@@ -88,7 +93,7 @@ char ip_adr[MAX_SIZE_IP_ADR];
         EEPROM.get(E2P_ADR_DutCycle,startDutyCycle);
         return (TRUE);
     } else {
-      Serial.println("########### Tag E2PROM NOT OK");
+      Serial.println("########### Tag E2PROM NOT OK  E2PROM_reinitialise" );
       E2PROM_reinitialise();
       return(TRUE);
   }
@@ -149,12 +154,14 @@ end  = false;
 
       // Boundary checking
       if (i>maxChar) {
-        Serial.println("EEPROM_READ_STR: EEPROM_READ_STR: String too long E2PROM_write_string");
+        Serial.println("EEPROM_READ_STR: String too long E2PROM_write_string");
+        Serial.print("EEPROM_READ_STR: length of String");
+        Serial.println(i);
         return 0;
       }
   } while (end==false);
-//  Serial.print("EEPROM_READ_STR: length of String");
-//  Serial.println(i);
+  Serial.print("EEPROM_READ_STR: length of String");
+  Serial.println(i);
   return (i);
 }
 // ############################################################################
@@ -252,6 +259,7 @@ return FALSE;
 void EEPROM_write_value(int address, int value) {
     EEPROM.put(address, value);
     EEPROM.commit();
+//    delay(500);
 }
 
 int EEPROM_read_value(int address) {
