@@ -20,7 +20,7 @@ DISCLAIMER:
 #include "APP_common.h"
 #include "../../HMI/common.h"  // Shared with Python client application
 
-IPAddress LocalIp(192,168,1,12);  // A changer pour chaque module....
+// IPAddress LocalIp(192,168,1,75);  // A changer pour chaque module....
 
 // Local service function
 void printDec(byte *, byte);
@@ -72,8 +72,8 @@ void UdpPrint(IPAddress destIP,char *Msg){
     Udp.write(Msg);
     Udp.endPacket();
 
-//    Serial.print("Port:");
-//    Serial.println(localUdpPort);
+    Serial.print("Port:");
+    Serial.println(localUdpPort);
 }
 
 void UdpPrintValue(IPAddress destIP, const char *string, int value) {
@@ -211,7 +211,7 @@ int pinMode1,pinMode2;            // Read pin used to select application
     if (ApplicationMode==APP_SERVO_CTRL){
        ServoControlSetup();
     }
-    localUdpPort = WiFiSetup(LocalIp);                  // Wifi initialisation */
+    localUdpPort = WiFiSetup();                  // Wifi initialisation */
 
 
     Serial.print("Port Wifi:");

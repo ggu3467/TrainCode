@@ -44,7 +44,7 @@ const char* ssid1             = "LouisRoussy";    // SSID for train Application
 const char* password1         = "monastier";      // Password for train Application
 
 
-IPAddress myIP(192, 168,1,75);
+IPAddress myIP(192, 168,1,81);
 IPAddress Gateway(192, 168, 1, 1);          // Attention au un seul swith actif 
 IPAddress SubNet(255, 255, 255, 1);
 IPAddress DNS(255,255,255,0);
