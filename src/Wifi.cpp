@@ -33,14 +33,13 @@ DISCLAIMER:
 #include <errno.h>
 
 /* Local Application headers */
-#include "APP_common.h"       
-#include "../../HMI/common.h"    // Shared with Python client application
+#include "../../TrainControl/common.h"  // Shared with Python client application
 
 #define NB_TRY_ROUTER 5       // Retry to connect the router
-#define DELAY_ROUTER  1000    // RETRY DELAY ROUTER CONNECTION
+#define DELAY_ROUTER  5000    // RETRY DELAY ROUTER CONNECTION
 
-const char* ssid1             = "LouisRoussy";    // SSID for train Application
-const char* password1         = "monastier";      // Password for train Application
+const char *ssid1             = "LouisRoussy";    // SSID for train Application
+const char *password1         = "monastier";      // Password for train Application
 
 WiFiClient  Client2;          // ESP32 WifiClient object
 
@@ -57,6 +56,8 @@ char        E2P_IpAdr[MAX_SIZE_IP_ADR];
 int WifiConnection(int nbTry, int delayTry) {
   int i;
   int connected=0;
+  
+  WiFi.begin(ssid1,password1);
 
   for (i=0;i<nbTry;i++){
       connected = WiFi.status();
@@ -91,6 +92,8 @@ void Wifi_UDP(){
 int WiFiSetup() {
 IPAddress myIP;
 int       myPort;
+char      myIPadress; 
+
 
 // Retrieve data store in the E2PROM_mgt
 EEPROM_READ_STR(E2P_ADR_SSID,   MAX_SIZE_SSID,  E2P_ssid);
@@ -109,38 +112,61 @@ Serial.println("----------------------------------");
 if (TCP_IP_check_string(E2P_ssid  , MAX_SIZE_SSID)) {
     Serial.println(E2P_ssid);
 
-    if (TCP_IP_check_string(E2P_pwd   , MAX_SIZE_PWD )) {
-        Serial.println(E2P_pwd);
-        if (TCP_IP_check_string(E2P_IpAdr , MAX_SIZE_IP_ADR )) {
+//    if (TCP_IP_check_string(E2P_pwd   , MAX_SIZE_PWD )) {
+//        Serial.println(E2P_pwd);
+//      if (TCP_IP_check_string(E2P_IpAdr , MAX_SIZE_IP_ADR )) {
 
-              EEPROM_READ_STR(E2P_ADR_IP_ADR, MAX_SIZE_IP_ADR,E2P_IpAdr);
-              Serial.print(" ### ");
-              Serial.print(E2P_IpAdr);
-              Serial.println(" ### ");
-              WiFi.begin(E2P_ssid, E2P_pwd);
-
-              if (WifiConnection(NB_TRY_ROUTER, DELAY_ROUTER)==WL_CONNECTED) {
-                 Serial.print("E2PROM: WIFI IP address: ");
-                 myIP = WiFi.localIP();
-                 Serial.println(myIP);
-                 // The TCP/IP port defined by this formula: fourth byte of the TCP/IP + 43150 ()
-                 myPort = myIP[3]+PORT_BASE;    
-                 Serial.print("PORT: ");
-                 Serial.println(myPort);
-
-                 Serial.print(" remote Port:");
-                 Serial.println(Client2.remotePort());
-                 return(myPort);
-              } else {
-                 Serial.println("### E2PROM DATA ROUTER connection FAILED###");
-              }
-          } else {
-              Serial.println("Check string E2P_IpAdr FAILED");
-        }
-      } else {
-          Serial.println("check string E2P_pwd OK");
+    EEPROM_READ_STR(E2P_ADR_IP_ADR, MAX_SIZE_IP_ADR,E2P_IpAdr);
+    Serial.print(" ### ");
+    Serial.print(E2P_IpAdr);
+    Serial.println(" ### ");
+    
+    int numberOfNetworks = WiFi.scanNetworks();
+  
+    Serial.print("Number of networks found: ");
+    Serial.println(numberOfNetworks);
+    for (int i = 0; i < numberOfNetworks; i++) {
+    
+        Serial.print("Network name: ");
+        Serial.println(WiFi.SSID(i));
+    
+        Serial.print("Signal strength: ");
+        Serial.println(WiFi.RSSI(i));
+    
+        Serial.print("MAC address: ");
+        Serial.println(WiFi.BSSIDstr(i));
+    
+        Serial.print("Encryption type: ");
+//        String encryptionTypeDescription = translateEncryptionType(WiFi.encryptionType(i));
+//        Serial.println(encryptionTypeDescription);
+    
+        Serial.println("-----------------------");
+    
       }
-  }
+    Serial.println(" -----------  Essai Connection ");
+     
+    if (WifiConnection(NB_TRY_ROUTER, DELAY_ROUTER)==WL_CONNECTED) {
+      myIP = WiFi.localIP();
+      Serial.print("LOCAL IP:");
+      Serial.println(WiFi.localIP());
+      
+      // The TCP/IP port defined by this formula: fourth byte of the TCP/IP + 43150 ()
+      myPort = myIP[3]+PORT_BASE;    
+      Serial.print("PORT: ");
+      Serial.println(myPort);
+
+//      myIP = myIP[0] + myIP[1] + myIP[2] + myIP[3]
+//      Serial.print(" remote Port:");    # Même valeur.
+//      Serial.println(Client2.remotePort());
+
+      Serial.println("### E2PROM DATA ROUTER connection SUCCESS" );
+//      E2P_ADR, int maxChar, char *StringBuf) {
+//      EEPROM_WRITE_STR( E2P_ADR_IP_ADR, sizeof(myIP),);
+      return(myPort);
+    } else {
+        Serial.println("### E2PROM DATA ROUTER connection FAILED###");
+    }    
+}
   return 0;
 }
 

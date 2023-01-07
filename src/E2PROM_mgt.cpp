@@ -16,13 +16,13 @@ DISCLAIMER:
 #include <EEPROM.h>
 
 /* Local Application headers */
-#include "APP_common.h"
+#include "../../TrainControl/common.h"  // Shared with Python client application
 
 #define TAG1  0x55AA   // Tag to Indicate that EZ2PROM is setup
 #define TAG2  0xCC33   // Tag to Indicate that EZ2PROM is setup
 
-extern const char*  ssid1;
-extern const char*  password1;
+extern char *ssid1;
+extern char *password1;
 extern       int    startDutyCycle;
 
 void E2PROM_reinitialise () {
@@ -165,12 +165,12 @@ end  = false;
 //    * const char* pStr: pointeur to the string to write (null termianted)
 // ###########################################################################
 
-int EEPROM_WRITE_STR(int E2P_ADR, int maxChar, const char *StringBuf) {
+int EEPROM_WRITE_STR(int E2P_ADR, int maxChar, char * StringBuf) {
     int idx = 0;
     int i=0;
     int value;        // convert 4 char to a 32bits int.
     unsigned char c1,c2,c3,c4;
-    char *pStr = (char *)StringBuf;
+    char *pStr = StringBuf;
     bool ended=false;
     char buf[256]; // sprintf..
 

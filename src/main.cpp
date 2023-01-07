@@ -17,8 +17,7 @@ DISCLAIMER:
 #include <Servo.h>
 
 /* Local Application headers */
-#include "APP_common.h"   
-#include "../../HMI/common.h"  // Shared with Python client application
+#include "../../TrainControl/common.h"  // Shared with Python client application
 
 // Local service function
 void printDec(byte *, byte);
@@ -61,7 +60,7 @@ WiFiUDP Udp;
 // Send to server using created UDP socket
 int  localUdpPort = PORT_BASE;
 char incomingPacket[256];
-
+char IP_Adr[16];
 
 void UdpPrint(IPAddress destIP,char *Msg){
 
@@ -192,6 +191,9 @@ int pinMode1,pinMode2;            // Read pin used to select application
     }
 
     WiFi.begin("LouisRoussy","Monastier");
+
+    WiFi.localIP();
+
 
     pinMode(LIVE_LED,OUTPUT);     // Set-up PIN for LED
     pinMode(PWM_PIN, OUTPUT);     // Set-up PIN for PowerControl
